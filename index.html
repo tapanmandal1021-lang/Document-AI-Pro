@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>The Catalyst Assam - Pro Staff Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0f172a; }
+        
+        .bg-animated {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0f172a, #020617);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .hidden-section { display: none; }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #1e293b; border-radius: 8px; } ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 8px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body class="bg-animated text-white min-h-screen p-4 md:p-8 flex flex-col items-center justify-center">
+
+    <div id="loginScreen" class="glass-panel p-10 rounded-3xl w-full max-w-md text-center transform transition-all duration-500 hover:scale-105">
+        <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2">Staff Portal</h2>
+        <p class="text-sm text-gray-400 mb-8 tracking-widest uppercase font-semibold">The Catalyst Assam</p>
+        <input type="password" id="pinInput" maxlength="4" class="w-full bg-gray-900/50 text-center text-3xl tracking-[1em] text-white p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 mb-6 transition" placeholder="****">
+        <button onclick="checkPin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.5)] w-full transition-all">Unlock System</button>
+        <p id="errorMsg" class="text-red-400 text-sm mt-4 hidden font-semibold animate-pulse">Wrong PIN!</p>
+    </div>
+
+    <div id="mainTool" class="hidden-section w-full max-w-5xl mt-4">
+        <div class="glass-panel p-8 rounded-3xl border border-blue-500/20">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">Document AI Pro</h1>
+                    <p class="text-xs text-gray-400 mt-1">Version 6.5 | Smart Page Tracking</p>
+                </div>
+                <button onclick="logout()" class="text-sm bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 px-6 py-2 rounded-full font-bold transition">Lock System</button>
+            </div>
+
+            <div class="mb-8 p-6 border border-dashed border-blue-500/50 rounded-2xl bg-blue-900/10">
+                <label class="block text-blue-300 mb-3 font-bold text-sm tracking-wide">1. Upload PDF or Image</label>
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <input type="file" id="fileUpload" accept=".pdf, image/*" onchange="handleFileUpload()" class="w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-blue-600 file:text-white cursor-pointer transition">
+                    <span class="text-xs text-red-400 font-bold border border-red-500/30 bg-red-500/10 px-3 py-1.5 rounded-full whitespace-nowrap">Max: 500MB</span>
+                </div>
+                <div id="uploadStatus" class="hidden mt-4 text-yellow-400 font-semibold text-sm bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20"><span id="uploadStatusText">Analyzing file...</span></div>
+            </div>
+
+            <label class="block text-gray-300 mb-2 font-bold text-sm">2. Review Extracted Text (Do not remove the Page Tags if you want tracking):</label>
+            <textarea id="sourceText" rows="6" class="w-full bg-gray-900/60 p-5 rounded-2xl mb-6 text-gray-100 outline-none border border-gray-600 focus:border-blue-500 transition leading-relaxed" placeholder="Extracted text will appear here..."></textarea>
+            
+            <label class="block text-gray-300 mb-2 font-bold text-sm">3. Target Language:</label>
+            <select id="targetLang" class="w-full bg-gray-900/60 p-4 rounded-2xl mb-8 text-white outline-none border border-gray-600 font-bold transition cursor-pointer">
+                <option value="as">Assamese (অসমীয়া)</option>
+                <option value="bn">Bengali (বাংলা)</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="en">English (English)</option>
+            </select>
+
+            <button onclick="processDocument()" id="translateBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 px-8 py-4 rounded-2xl font-extrabold w-full text-lg shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all">Translate & Download Tracked PDF</button>
+            <div id="statusBox" class="hidden mt-6 text-center text-emerald-400 font-bold bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20"><span id="statusText">Processing...</span></div>
+        </div>
+    </div>
+
+    <div id="cropModal" class="modal-overlay hidden-section">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-3xl m-4 max-h-[90vh] flex flex-col">
+            <h2 class="text-xl font-bold text-blue-400 mb-4">Crop Image Area</h2>
+            <div class="flex-grow overflow-hidden bg-gray-900 rounded-lg mb-4" style="height: 50vh;"><img id="imageToCrop" src="" class="max-w-full h-auto"></div>
+            <div class="flex justify-end gap-4"><button onclick="closeCropModal()" class="px-6 py-2 bg-gray-600 rounded font-bold">Cancel</button><button onclick="extractCroppedText()" class="px-6 py-2 bg-blue-600 rounded font-bold">Extract</button></div>
+        </div>
+    </div>
+
+    <div id="pdfModal" class="modal-overlay hidden-section">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-2xl m-4 max-h-[80vh] flex flex-col">
+            <h2 class="text-xl font-bold text-blue-400 mb-2">Select PDF Pages</h2>
+            <div class="flex justify-between items-center mb-4 bg-gray-800 p-2 rounded">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-blue-300"><input type="checkbox" id="selectAllPages" onchange="toggleAllPages()" class="w-5 h-5 rounded"> Select All</label>
+                <span id="totalPagesBadge" class="bg-blue-600 px-3 py-1 rounded-full text-xs font-bold">Total: 0</span>
+            </div>
+            <div id="pageCheckboxContainer" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 overflow-y-auto pr-2" style="max-height: 40vh;"></div>
+            <div class="flex justify-end gap-4 mt-6"><button onclick="closePdfModal()" class="px-6 py-2 bg-gray-600 rounded font-bold">Cancel</button><button onclick="extractSelectedPdfPages()" class="px-6 py-2 bg-green-600 rounded font-bold">Extract Selected</button></div>
+        </div>
+    </div>
+
+    <div class="hidden">
+        <div id="pdfTemplate" class="bg-white text-black p-12" style="width: 210mm; min-height: 297mm; font-family: 'Segoe UI', sans-serif;">
+            <div style="border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px;">
+                <h1 style="font-size: 28pt; font-weight: 800; text-align: center; color: #0f172a; margin: 0;">The Catalyst Assam</h1>
+            </div>
+            <div id="finalOutput" style="font-size: 12pt; line-height: 1.8; color: #1e293b; white-space: pre-wrap; text-align: justify; word-wrap: break-word;"></div>
+        </div>
+    </div>
+
+    <script>
+        const SECRET_PIN = "2026"; 
+        const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyt_mB02_FgyVqQDjq6Lana2TaheTwX8KsFGwV6WmGsqMDPyGwqp-eAZnOsTzXRJPg1/exec"; 
+
+        let cropper, pdfDocument;
+
+        function checkPin() { if(document.getElementById('pinInput').value === SECRET_PIN) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainTool').style.display = 'block'; } else { document.getElementById('errorMsg').classList.remove('hidden'); } }
+        document.getElementById("pinInput").addEventListener("keypress", e => { if(e.key === "Enter") checkPin(); });
+        function logout() { location.reload(); }
+
+        function handleFileUpload() {
+            const file = document.getElementById('fileUpload').files[0];
+            if(!file) return;
+            if(file.size > 524288000) return alert("System Warning: File size exceeds 500MB!");
+            if(file.type.startsWith('image/')) openCropModal(file);
+            else if(file.type === 'application/pdf') openPdfModal(file);
+            else alert("Unsupported format.");
+        }
+
+        // Image Cropping
+        function openCropModal(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('imageToCrop');
+                img.src = e.target.result;
+                document.getElementById('cropModal').style.display = 'flex';
+                if(cropper) cropper.destroy();
+                cropper = new Cropper(img, { viewMode: 1, dragMode: 'crop', autoCropArea: 0.8 });
+            };
+            reader.readAsDataURL(file);
+        }
+        function closeCropModal() { document.getElementById('cropModal').style.display = 'none'; document.getElementById('fileUpload').value = ""; }
+        function extractCroppedText() {
+            if(!cropper) return;
+            const uploadText = document.getElementById('uploadStatusText');
+            document.getElementById('uploadStatus').classList.remove('hidden');
+            uploadText.innerText = "Extracting text...";
+            document.getElementById('cropModal').style.display = 'none';
+            cropper.getCroppedCanvas().toBlob((blob) => {
+                Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
+                    // Added a tracker for Image
+                    document.getElementById('sourceText').value = "\n[ ORIGINAL SOURCE: CROPPED IMAGE ]\n\n" + text;
+                    uploadText.innerText = "Extraction Successful!";
+                    setTimeout(() => document.getElementById('uploadStatus').classList.add('hidden'), 2500);
+                });
+            });
+        }
+
+        // PDF Page Selection
+        function openPdfModal(file) {
+            document.getElementById('uploadStatus').classList.remove('hidden');
+            document.getElementById('uploadStatusText').innerText = "Loading PDF Pages...";
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                try {
+                    pdfDocument = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                    document.getElementById('totalPagesBadge').innerText = `Total: ${pdfDocument.numPages} Pages`;
+                    const container = document.getElementById('pageCheckboxContainer');
+                    container.innerHTML = ''; 
+                    for(let i = 1; i <= pdfDocument.numPages; i++) {
+                        container.innerHTML += `<label class="flex p-2 bg-gray-700 rounded cursor-pointer border"><input type="checkbox" value="${i}" class="pdf-page-cb w-4 h-4 mr-2"> Page ${i}</label>`;
+                    }
+                    document.getElementById('uploadStatus').classList.add('hidden');
+                    document.getElementById('pdfModal').style.display = 'flex';
+                } catch(e) { document.getElementById('uploadStatusText').innerText = "Error loading PDF."; }
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+        function closePdfModal() { document.getElementById('pdfModal').style.display = 'none'; document.getElementById('fileUpload').value = ""; }
+        function toggleAllPages() {
+            const isChecked = document.getElementById('selectAllPages').checked;
+            document.querySelectorAll('.pdf-page-cb').forEach(cb => cb.checked = isChecked);
+        }
+
+        async function extractSelectedPdfPages() {
+            const checkboxes = document.querySelectorAll('.pdf-page-cb:checked');
+            if(checkboxes.length === 0) return alert("Select at least one page!");
+            document.getElementById('pdfModal').style.display = 'none';
+            document.getElementById('uploadStatus').classList.remove('hidden');
+            document.getElementById('uploadStatusText').innerText = `Extracting ${checkboxes.length} pages...`;
+
+            let fullText = "";
+            for(let cb of checkboxes) {
+                const pageNum = cb.value;
+                const page = await pdfDocument.getPage(parseInt(pageNum));
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                
+                // THE SMART TRACKER (Added spaces so it clearly separates in translation)
+                fullText += `\n\n========== [ ORIGINAL PAGE : ${pageNum} ] ==========\n\n` + pageText + "\n\n";
+            }
+
+            document.getElementById('sourceText').value = fullText;
+            document.getElementById('uploadStatusText').innerText = "PDF Extraction Complete!";
+            setTimeout(() => document.getElementById('uploadStatus').classList.add('hidden'), 2500);
+        }
+
+        // Translation
+        async function processDocument() {
+            const text = document.getElementById('sourceText').value;
+            const targetLang = document.getElementById('targetLang').value;
+            const langNames = { 'as': 'Assamese', 'bn': 'Bengali', 'hi': 'Hindi', 'en': 'English' };
+            if(!text) return alert("Extract text first.");
+
+            const statusBox = document.getElementById('statusBox'), statusText = document.getElementById('statusText'), btn = document.getElementById('translateBtn');
+            statusBox.classList.remove('hidden'); btn.classList.add('opacity-50', 'cursor-not-allowed'); btn.disabled = true;
+            statusText.innerText = `Connecting to Translation Engine...`;
+
+            try {
+                let finalText = text;
+                if(targetLang !== 'en') {
+                    const response = await fetch(GOOGLE_API_URL, {
+                        method: 'POST', redirect: 'follow', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ q: text, lang: targetLang })
+                    });
+                    if(!response.ok) throw new Error("Connection interrupted");
+                    finalText = await response.text();
+                    if(finalText.startsWith("Error:")) throw new Error(finalText);
+                }
+
+                // Formatting the tracker to look bold in the PDF
+                finalText = finalText.replace(/========== \[ ORIGINAL PAGE : /g, '<br><br><div style="background:#3b82f6;color:white;padding:5px;text-align:center;font-weight:bold;font-size:14pt;border-radius:5px;">CONTINUING FROM ORIGINAL PAGE : ');
+                finalText = finalText.replace(/ \] ==========/g, '</div><br>');
+
+                document.getElementById('finalOutput').innerHTML = finalText;
+                statusText.innerText = "Generating Auto-Paged A4 PDF...";
+
+                const element = document.getElementById('pdfTemplate');
+                // Auto-page breaking is active in html2pdf via 'pagebreak: { mode: 'avoid-all' }' implicitly by default for text
+                const opt = {
+                    margin:       [15, 10, 15, 10], 
+                    filename:     `Catalyst_Assam_${langNames[targetLang]}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(element).save().then(() => {
+                    statusText.innerText = "Done! File Downloaded.";
+                    setTimeout(() => {
+                        document.getElementById('sourceText').value = ""; document.getElementById('fileUpload').value = ""; 
+                        statusBox.classList.add('hidden'); btn.classList.remove('opacity-50', 'cursor-not-allowed'); btn.disabled = false;
+                    }, 3000);
+                });
+            } catch (error) {
+                statusText.innerText = "Error: Check internet or Github connection.";
+                statusBox.classList.replace('text-emerald-400', 'text-red-400');
+                btn.classList.remove('opacity-50'); btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
